@@ -1,0 +1,23 @@
+{
+  "name": "nodejswebservice",
+  "version": "1.0.0",
+  "description": "Attempt to fetch sql database info and return in JSON form to be used by Lambda proxy.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kizuku/NodeJSWebService.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kizuku/NodeJSWebService/issues"
+  },
+  "homepage": "https://github.com/kizuku/NodeJSWebService#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "express": "^4.16.3"
+  }
+}
