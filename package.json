@@ -16,8 +16,12 @@
     "url": "https://github.com/kizuku/NodeJSWebService/issues"
   },
   "homepage": "https://github.com/kizuku/NodeJSWebService#readme",
-  "dependencies": {},
+  "dependencies": {
+    "dotenv": "^6.0.0",
+    "mssql": "^4.1.0"
+  },
   "devDependencies": {
+    "body-parser": "^1.18.3",
     "express": "^4.16.3"
   }
 }
