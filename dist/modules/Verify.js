@@ -36,7 +36,7 @@ var timestamp = function timestamp(_timestamp) {
 
 var signature = function () {
     var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(url, _signature, body) {
-        var result, certs, arrSize, i, parsedCert, beforeDate, afterDate, currentDate, SAN, rootCert, cert, modulus, exp, modulus2, exp2, key2, publicKey, derivedHash, key, dec;
+        var result, certs, arrSize, i, parsedCert, beforeDate, afterDate, currentDate, SAN, rootCert, cert, key, dec, derivedHash;
         return regeneratorRuntime.wrap(function _callee$(_context) {
             while (1) {
                 switch (_context.prev = _context.next) {
@@ -105,42 +105,54 @@ var signature = function () {
 
                     case 22:
 
-                        // extract public key
+                        // Parse the cert to a Javascript object
                         cert = x509.parseCert(certs[0]);
 
-                        console.log("Begin Cert:\n\n" + JSON.stringify(cert) + "\n\nEnd Cert");
-                        modulus = x509.parseCert(certs[0]).publicModulus;
-                        exp = x509.parseCert(certs[0]).publicExponent;
-                        modulus2 = new Buffer(modulus, 'hex');
-                        exp2 = new Buffer(exp);
+                        // Create a new nodeRSA object
 
-                        exp2.writeInt32BE(65537, 0);
+                        key = new _nodeRsa2.default();
 
-                        key2 = new _nodeRsa2.default();
+                        // Import a key from the certificate data.
+                        // We are only provided a public modulus, which is in hex format.
+                        // The following code will import a public key using a supplied public modulus in hex format: 
+                        // (note that the public exponent is apparently not used to generate a public key.. 
+                        // this is what I've seen in documentation)
 
-                        key2.generateKeyPair();
+                        key.importKey({
+                            n: Buffer.from(cert.publicModulus, 'hex'),
+                            e: 65537
+                        }, 'components-public');
 
-                        modulus = new Buffer.from(modulus, 'hex').toString('base64');
-                        exp = new Buffer.from(exp, 'hex').toString('base64');
-
-                        publicKey = getPem(modulus, exp);
+                        // Decrypt the signature using the public key. 
+                        // We are letting nodeRSA know the string is base64 encoded.
+                        dec = key.decryptPublic(_signature, 'base64');
                         derivedHash = CryptoJS.SHA1(body);
-                        key = new _nodeRsa2.default(publicKey, 'pkcs1-public-pem', { signingScheme: 'pkcs1-sha1' });
-                        dec = key2.decryptPublic(_signature, 'base64');
+
 
                         console.log("Decrypted: " + dec);
 
+                        //console.log("Begin Cert:\n\n"+JSON.stringify(cert)+"\n\nEnd Cert")
+
+                        //let modulus = x509.parseCert(certs[0]).publicModulus
+                        //let exp = x509.parseCert(certs[0]).publicExponent
+
+                        //modulus = new Buffer.from(modulus, 'hex').toString('base64')
+                        //exp = new Buffer.from(exp, 'hex').toString('base64')
+
+                        // const publicKey = getPem(modulus, exp)
+                        //const key = new nodeRSA(publicKey, 'pkcs1-public-pem', {signingScheme: 'pkcs1-sha1'})
                         //console.log("assertedHash: " + assertedHash)
                         //console.log("derivedHash: " + derivedHash)
 
+
                         if (!(assertedHash !== derivedHash)) {
-                            _context.next = 40;
+                            _context.next = 30;
                             break;
                         }
 
                         throw new Error('error: hashes do not match');
 
-                    case 40:
+                    case 30:
                     case 'end':
                         return _context.stop();
                 }

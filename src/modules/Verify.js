@@ -53,31 +53,46 @@ const signature = async (url, signature, body) => {
 
 
 
-    // extract public key
+    // Parse the cert to a Javascript object
     const cert = x509.parseCert(certs[0])
-    console.log("Begin Cert:\n\n"+JSON.stringify(cert)+"\n\nEnd Cert")
-    let modulus = x509.parseCert(certs[0]).publicModulus
-    let exp = x509.parseCert(certs[0]).publicExponent
 
-    const modulus2 = new Buffer(modulus, 'hex');
-    const exp2 = new Buffer(exp);
-    exp2.writeInt32BE(65537, 0);
+    // Create a new nodeRSA object
+    const key = new nodeRSA();
 
-    const key2 = new nodeRSA()
-    key2.generateKeyPair()
+    // Import a key from the certificate data.
+    // We are only provided a public modulus, which is in hex format.
+    // The following code will import a public key using a supplied public modulus in hex format: 
+    // (note that the public exponent is apparently not used to generate a public key.. 
+    // this is what I've seen in documentation)
+    key.importKey({
+        n: Buffer.from(cert.publicModulus, 'hex'),
+        e: 65537,
+    }, 'components-public')
 
-    modulus = new Buffer.from(modulus, 'hex').toString('base64')
-    exp = new Buffer.from(exp, 'hex').toString('base64')
-
-    const publicKey = getPem(modulus, exp)
+    // Decrypt the signature using the public key. 
+    // We are letting nodeRSA know the string is base64 encoded.
+    const dec = key.decryptPublic(signature, 'base64')
 
     const derivedHash = CryptoJS.SHA1(body)
-    const key = new nodeRSA(publicKey, 'pkcs1-public-pem', {signingScheme: 'pkcs1-sha1'})
-    const dec = key2.decryptPublic(signature, 'base64')
-    console.log("Decrypted: "+dec)
 
+
+    console.log("Decrypted: " + dec)
+
+    //console.log("Begin Cert:\n\n"+JSON.stringify(cert)+"\n\nEnd Cert")
+
+    //let modulus = x509.parseCert(certs[0]).publicModulus
+    //let exp = x509.parseCert(certs[0]).publicExponent
+
+    //modulus = new Buffer.from(modulus, 'hex').toString('base64')
+    //exp = new Buffer.from(exp, 'hex').toString('base64')
+
+    // const publicKey = getPem(modulus, exp)
+    //const key = new nodeRSA(publicKey, 'pkcs1-public-pem', {signingScheme: 'pkcs1-sha1'})
     //console.log("assertedHash: " + assertedHash)
     //console.log("derivedHash: " + derivedHash)
+
+
+
 
     if (assertedHash !== derivedHash) {
         throw new Error('error: hashes do not match')
