@@ -4,7 +4,9 @@
   "description": "Attempt to fetch sql database info and return in JSON form to be used by Lambda proxy.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "babel-node spec/run.js",
+    "babel": "babel src --watch --out-dir ./dist",
+    "start": "node dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -17,9 +19,11 @@
   },
   "homepage": "https://github.com/kizuku/NodeJSWebService#readme",
   "dependencies": {
+    "@types/node-rsa": "^0.4.3",
     "alexa-verifier": "^2.0.1",
     "atob": "^2.1.1",
     "axios": "^0.18.0",
+    "babel-polyfill": "^6.26.0",
     "content-type": "^1.0.4",
     "crypto-js": "^3.1.9-1",
     "dotenv": "^6.0.0",
@@ -29,6 +33,7 @@
     "js-base64": "^2.4.8",
     "mssql": "^4.1.0",
     "ngrok": "^3.0.1",
+    "node-rsa": "^1.0.1",
     "normalize-url": "^3.2.0",
     "path": "^0.12.7",
     "raw-body": "^2.3.3",
@@ -37,7 +42,10 @@
     "x509.js": "^1.0.0"
   },
   "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
     "body-parser": "^1.18.3",
-    "express": "^4.16.3"
+    "express": "^4.16.3",
+    "jasmine": "^3.2.0"
   }
 }
