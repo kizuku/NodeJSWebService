@@ -39,28 +39,21 @@ app.post('/', function () {
             while (1) {
                 switch (_context.prev = _context.next) {
                     case 0:
-                        _context.prev = 0;
+                        try {
+                            _Verify2.default.certificateURL(req.headers.signaturecertchainurl);
+                            _Verify2.default.timestamp(req.body.request.timestamp);
+                            _Verify2.default.signature(req.headers.signaturecertchainurl, req.headers.signature, req.rawBody);
+                            console.log("\n\nTests passed\n\n");
+                        } catch (e) {
+                            console.log(e);
+                        }
 
-                        _Verify2.default.certificateURL(req.headers.signaturecertchainurl);
-                        _context.next = 4;
-                        return _Verify2.default.signature(req.headers.signaturecertchainurl, req.headers.signature, req.rawBody);
-
-                    case 4:
-                        _context.next = 9;
-                        break;
-
-                    case 6:
-                        _context.prev = 6;
-                        _context.t0 = _context['catch'](0);
-
-                        console.log(_context.t0);
-
-                    case 9:
+                    case 1:
                     case 'end':
                         return _context.stop();
                 }
             }
-        }, _callee, undefined, [[0, 6]]);
+        }, _callee, undefined);
     }));
 
     return function (_x, _x2) {

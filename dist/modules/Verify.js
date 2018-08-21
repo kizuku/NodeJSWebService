@@ -36,7 +36,7 @@ var timestamp = function timestamp(_timestamp) {
 
 var signature = function () {
     var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(url, _signature, body) {
-        var result, certs, arrSize, i, parsedCert, beforeDate, afterDate, currentDate, SAN, rootCert, cert, modulus, exp, modulus2, exp2, key2, publicKey, derivedHash, key, dec;
+        var result, certs, arrSize, i, parsedCert, beforeDate, afterDate, currentDate, SAN, rootCert, cert, key, dec, derivedHash, decSub, der64;
         return regeneratorRuntime.wrap(function _callee$(_context) {
             while (1) {
                 switch (_context.prev = _context.next) {
@@ -107,40 +107,48 @@ var signature = function () {
 
                         // extract public key
                         cert = x509.parseCert(certs[0]);
+                        key = new _nodeRsa2.default();
 
-                        console.log("Begin Cert:\n\n" + JSON.stringify(cert) + "\n\nEnd Cert");
-                        modulus = x509.parseCert(certs[0]).publicModulus;
-                        exp = x509.parseCert(certs[0]).publicExponent;
-                        modulus2 = new Buffer(modulus, 'hex');
-                        exp2 = new Buffer(exp);
+                        key.importKey({
+                            n: Buffer.from(cert.publicModulus, 'hex'),
+                            e: 65537
+                        }, 'components-public');
 
-                        exp2.writeInt32BE(65537, 0);
-
-                        key2 = new _nodeRsa2.default();
-
-                        key2.generateKeyPair();
-
-                        modulus = new Buffer.from(modulus, 'hex').toString('base64');
-                        exp = new Buffer.from(exp, 'hex').toString('base64');
-
-                        publicKey = getPem(modulus, exp);
+                        dec = key.decryptPublic(_signature, 'base64');
                         derivedHash = CryptoJS.SHA1(body);
-                        key = new _nodeRsa2.default(publicKey, 'pkcs1-public-pem', { signingScheme: 'pkcs1-sha1' });
-                        dec = key2.decryptPublic(_signature, 'base64');
 
-                        console.log("Decrypted: " + dec);
+                        //console.log("Decrypted: " + dec + '\n')
+                        //console.log("Derived: " + derivedHash + '\n')
+
+                        decSub = dec.substring(20);
+                        der64 = Buffer.from(derivedHash.toString(), 'hex').toString('base64');
+
+
+                        console.log("Decrypted Substr: " + decSub + '\n');
+                        console.log("Derived 64: " + der64 + '\n');
+
+                        //console.log("Begin Cert:\n\n"+JSON.stringify(cert)+"\n\nEnd Cert")
+
+                        //let modulus = x509.parseCert(certs[0]).publicModulus
+                        //let exp = x509.parseCert(certs[0]).publicExponent
+
+                        //modulus = new Buffer.from(modulus, 'hex').toString('base64')
+                        //exp = new Buffer.from(exp, 'hex').toString('base64')
+
+                        //const publicKey = getPem(modulus, exp)
+                        //const key = new nodeRSA(publicKey, 'pkcs1-public-pem', {signingScheme: 'pkcs1-sha1'})
 
                         //console.log("assertedHash: " + assertedHash)
                         //console.log("derivedHash: " + derivedHash)
 
-                        if (!(assertedHash !== derivedHash)) {
-                            _context.next = 40;
+                        if (!(decSub !== der64)) {
+                            _context.next = 33;
                             break;
                         }
 
                         throw new Error('error: hashes do not match');
 
-                    case 40:
+                    case 33:
                     case 'end':
                         return _context.stop();
                 }

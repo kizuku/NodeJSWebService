@@ -25,7 +25,8 @@ app.use((req, res, next) => {
 app.post('/', async (req, res) => {
     try {
         Verify.certificateURL(req.headers.signaturecertchainurl)
-        await Verify.signature(req.headers.signaturecertchainurl, req.headers.signature, req.rawBody)
+        Verify.timestamp(req.body.request.timestamp)
+        Verify.signature(req.headers.signaturecertchainurl, req.headers.signature, req.rawBody)
     } catch (e) {
         console.log(e)
     }

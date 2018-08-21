@@ -55,31 +55,40 @@ const signature = async (url, signature, body) => {
 
     // extract public key
     const cert = x509.parseCert(certs[0])
-    console.log("Begin Cert:\n\n"+JSON.stringify(cert)+"\n\nEnd Cert")
-    let modulus = x509.parseCert(certs[0]).publicModulus
-    let exp = x509.parseCert(certs[0]).publicExponent
+    
+    const key = new nodeRSA();
+    key.importKey({
+        n: Buffer.from(cert.publicModulus, 'hex'),
+        e: 65537,
+    }, 'components-public')
 
-    const modulus2 = new Buffer(modulus, 'hex');
-    const exp2 = new Buffer(exp);
-    exp2.writeInt32BE(65537, 0);
-
-    const key2 = new nodeRSA()
-    key2.generateKeyPair()
-
-    modulus = new Buffer.from(modulus, 'hex').toString('base64')
-    exp = new Buffer.from(exp, 'hex').toString('base64')
-
-    const publicKey = getPem(modulus, exp)
-
+    const dec = key.decryptPublic(signature, 'base64')
     const derivedHash = CryptoJS.SHA1(body)
-    const key = new nodeRSA(publicKey, 'pkcs1-public-pem', {signingScheme: 'pkcs1-sha1'})
-    const dec = key2.decryptPublic(signature, 'base64')
-    console.log("Decrypted: "+dec)
 
+    //console.log("Decrypted: " + dec + '\n')
+    //console.log("Derived: " + derivedHash + '\n')
+    
+    const decSub = dec.substring(20)
+    const der64 = Buffer.from(derivedHash.toString(), 'hex').toString('base64')
+
+    console.log("Decrypted Substr: " + decSub)
+    console.log("Derived 64: " + der64 + '\n')
+
+    //console.log("Begin Cert:\n\n"+JSON.stringify(cert)+"\n\nEnd Cert")
+
+    //let modulus = x509.parseCert(certs[0]).publicModulus
+    //let exp = x509.parseCert(certs[0]).publicExponent
+
+    //modulus = new Buffer.from(modulus, 'hex').toString('base64')
+    //exp = new Buffer.from(exp, 'hex').toString('base64')
+
+    //const publicKey = getPem(modulus, exp)
+    //const key = new nodeRSA(publicKey, 'pkcs1-public-pem', {signingScheme: 'pkcs1-sha1'})
+    
     //console.log("assertedHash: " + assertedHash)
     //console.log("derivedHash: " + derivedHash)
 
-    if (assertedHash !== derivedHash) {
+    if (decSub !== der64) {
         throw new Error('error: hashes do not match')
     }
 }
