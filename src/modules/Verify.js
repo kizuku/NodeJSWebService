@@ -71,8 +71,8 @@ const signature = async (url, signature, body) => {
     const decSub = dec.substring(20)
     const der64 = Buffer.from(derivedHash.toString(), 'hex').toString('base64')
 
-    console.log("Decrypted Substr: " + decSub)
-    console.log("Derived 64: " + der64 + '\n')
+    //console.log("Decrypted Substr: " + decSub)
+    //console.log("Derived 64: " + der64 + '\n')
 
     //console.log("Begin Cert:\n\n"+JSON.stringify(cert)+"\n\nEnd Cert")
 

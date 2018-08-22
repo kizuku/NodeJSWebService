@@ -123,9 +123,8 @@ var signature = function () {
                         decSub = dec.substring(20);
                         der64 = Buffer.from(derivedHash.toString(), 'hex').toString('base64');
 
-
-                        console.log("Decrypted Substr: " + decSub + '\n');
-                        console.log("Derived 64: " + der64 + '\n');
+                        //console.log("Decrypted Substr: " + decSub)
+                        //console.log("Derived 64: " + der64 + '\n')
 
                         //console.log("Begin Cert:\n\n"+JSON.stringify(cert)+"\n\nEnd Cert")
 
@@ -142,13 +141,13 @@ var signature = function () {
                         //console.log("derivedHash: " + derivedHash)
 
                         if (!(decSub !== der64)) {
-                            _context.next = 33;
+                            _context.next = 31;
                             break;
                         }
 
                         throw new Error('error: hashes do not match');
 
-                    case 33:
+                    case 31:
                     case 'end':
                         return _context.stop();
                 }
