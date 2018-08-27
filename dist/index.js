@@ -17,6 +17,7 @@ function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, a
 var express = require('express');
 var app = express();
 var sql = require('mssql');
+require('dotenv').config();
 
 var port = process.env.PORT || 443;
 
@@ -36,98 +37,99 @@ app.use(function (req, res, next) {
 
 app.post('/', function () {
     var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(req, res) {
-        var statusCode, message, shouldEnd, titleText, contentText, instructions;
+        var config, statusCode, message, shouldEnd, titleText, contentText, instructions, pool;
         return regeneratorRuntime.wrap(function _callee$(_context) {
             while (1) {
                 switch (_context.prev = _context.next) {
                     case 0:
-                        _context.prev = 0;
+                        config = {
+                            user: process.env.user,
+                            password: process.env.password,
+                            server: process.env.server,
+                            database: process.env.database
+                            //user: 'autoalexa',
+                            //password: '@1exa',
+                            //server: '10.35.149.190',
+                            //database: 'tempdb'
+                        };
+                        _context.prev = 1;
 
                         _Verify2.default.certificateURL(req.headers.signaturecertchainurl);
                         _Verify2.default.timestamp(req.body.request.timestamp);
-                        _context.next = 5;
+                        _context.next = 6;
                         return _Verify2.default.signature(req.headers.signaturecertchainurl, req.headers.signature, req.rawBody);
 
-                    case 5:
-                        _context.next = 10;
+                    case 6:
+                        _context.next = 11;
                         break;
 
-                    case 7:
-                        _context.prev = 7;
-                        _context.t0 = _context['catch'](0);
+                    case 8:
+                        _context.prev = 8;
+                        _context.t0 = _context['catch'](1);
 
                         console.log(_context.t0);
 
-                    case 10:
+                    case 11:
                         statusCode = 200;
                         shouldEnd = false;
                         instructions = "Welcome to <skill name>. You can fetch information with the following commands: get records, get records in AREA, get critical records. " + "For more information, say help.";
 
-                        //console.log("Body: \n\n" + JSON.stringify(req.body) + "\n\n")
-                        //return
-
                         // set response parameters
                         res.setHeader('Content-Type', 'application/json');
-
-                        if (!(req.body.request.type === 'LaunchRequest')) {
-                            _context.next = 20;
-                            break;
+                        if (req.body.request.type === 'LaunchRequest') {
+                            message = instructions;
+                            titleText = "Skill Launch";
+                            contentText = "Launch the skill for use by saying 'Alexa, launch <skill name>.'";
+                        } else if (req.body.request.type === 'SessionEndedRequest') {
+                            // Don't send any response
+                        } else {
+                            pool = new sql.ConnectionPool(config, function (err) {
+                                if (err) {
+                                    console.log(err);
+                                    return;
+                                }
+                                pool.request().query('select TOP 2 * from ##TempTable', function (error, recordset) {
+                                    if (error) console.log(error);else {
+                                        // recordset.recordset to get relevant data
+                                        console.log(recordset.recordset);
+                                        //res.send(recordset)
+                                        switch (req.body.request.intent.name) {
+                                            case 'GetRecordIntent':
+                                                message = "Test get record";
+                                                titleText = "TEST";
+                                                contentText = message;
+                                                break;
+                                            case 'AMAZON.HelpIntent':
+                                                message = "To get general records, say 'Get records'. To get records from a specific area, say 'Get records in AREA', substituting in the specific area. " + "To get records with critical status, say 'Get critical records'. To exit, say 'Stop'. To cancel operation without exiting, say 'Cancel'.";
+                                                titleText = "Skill Help Information";
+                                                contentText = message;
+                                                break;
+                                            case 'AMAZON.StopIntent':
+                                                shouldEnd = true;
+                                                message = "Skill stopped. Shutting down.";
+                                                titleText = "Skill Operation Stopped";
+                                                contentText = "Skill operation stopped. Please relaunch to continue.";
+                                                break;
+                                            case 'AMAZON.CancelIntent':
+                                                message = "Skill operation cancelled. Please say another command to continue or 'stop' to exit.";
+                                                titleText = "Skill Operation Cancelled";
+                                                contentText = message;
+                                                break;
+                                            case 'AMAZON.FallbackIntent':
+                                                message = "I'm not sure I understand. Please say a valid command or repeat yourself.";
+                                                titleText = "Skill Fallback";
+                                                contentText = "Unknown command. Please say a valid command or repeat if valid.";
+                                                break;
+                                            default:
+                                                statusCode = 500;
+                                                shouldEnd = true;
+                                                break;
+                                        }
+                                    }
+                                });
+                            });
                         }
 
-                        message = instructions;
-                        titleText = "Skill Launch";
-                        contentText = "Launch the skill for use by saying 'Alexa, launch <skill name>.'";
-                        _context.next = 47;
-                        break;
-
-                    case 20:
-                        if (!(req.body.request.type === 'SessionEndedRequest')) {
-                            _context.next = 23;
-                            break;
-                        }
-
-                        _context.next = 47;
-                        break;
-
-                    case 23:
-                        _context.t1 = req.body.request.intent.name;
-                        _context.next = _context.t1 === 'GetRecord' ? 26 : _context.t1 === 'AMAZON.HelpIntent' ? 27 : _context.t1 === 'AMAZON.StopIntent' ? 31 : _context.t1 === 'AMAZON.CancelIntent' ? 36 : _context.t1 === 'AMAZON.FallbackIntent' ? 40 : 44;
-                        break;
-
-                    case 26:
-                        return _context.abrupt('break', 47);
-
-                    case 27:
-                        message = "To get general records, say 'Get records'. To get records from a specific area, say 'Get records in AREA', substituting in the specific area. " + "To get records with critical status, say 'Get critical records'. To exit, say 'Stop'. To cancel operation without exiting, say 'Cancel'.";
-                        titleText = "Skill Help Information";
-                        contentText = message;
-                        return _context.abrupt('break', 47);
-
-                    case 31:
-                        shouldEnd = true;
-                        message = "Skill stopped. Shutting down.";
-                        titleText = "Skill Operation Stopped";
-                        contentText = "Skill operation stopped. Please relaunch to continue.";
-                        return _context.abrupt('break', 47);
-
-                    case 36:
-                        message = "Skill operation cancelled. Please say another command to continue or 'stop' to exit.";
-                        titleText = "Skill Operation Cancelled";
-                        contentText = message;
-                        return _context.abrupt('break', 47);
-
-                    case 40:
-                        message = "I'm not sure I understand. Please say a valid command or repeat yourself.";
-                        titleText = "Skill Fallback";
-                        contentText = "Unknown command. Please say a valid command or repeat if valid.";
-                        return _context.abrupt('break', 47);
-
-                    case 44:
-                        statusCode = 500;
-                        shouldEnd = true;
-                        return _context.abrupt('break', 47);
-
-                    case 47:
                         // send response
                         res.status(statusCode).json({
                             version: "1.0",
@@ -155,12 +157,12 @@ app.post('/', function () {
                             }
                         });
 
-                    case 48:
+                    case 17:
                     case 'end':
                         return _context.stop();
                 }
             }
-        }, _callee, undefined, [[0, 7]]);
+        }, _callee, undefined, [[1, 8]]);
     }));
 
     return function (_x, _x2) {
