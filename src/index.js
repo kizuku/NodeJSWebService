@@ -86,6 +86,7 @@ app.post('/', async (req, res) => {
     } else if (req.body.request.type === 'SessionEndedRequest') {
         return true
     }
+    
     switch (req.body.request.intent.name) {
         case 'GetRecordIntent':
             message = "Test get record"
