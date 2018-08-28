@@ -53,6 +53,31 @@ app.post('/', async (req, res) => {
         });
     }
 
+    function sendDialog(intentName, slotName) {
+        //console.log("Trying to send dialog")
+        var textMsg = "Default value"
+        if (intentName = "NumRecordsIntent") {
+            textMsg = "What level or category are you interested in?"
+        }
+        res.status(200).json({
+            version: "1.0",
+            sessionAttributes: {},
+            response: {
+                outputSpeech: {
+                    type: "PlainText",
+                    text: textMsg
+                },
+                shouldEndSession: false,
+                directives: [
+                    {
+                        type: "Dialog.ElicitSlot",
+                        slotToElicit: slotName
+                    }
+                ]
+            }
+        })
+    }
+
     const config = {
         user: process.env.user,
         password: process.env.password,
@@ -72,7 +97,7 @@ app.post('/', async (req, res) => {
     var statusCode, message, shouldEnd, titleText, contentText, instructions
     statusCode = 200;
     shouldEnd = false;
-    instructions = "Welcome to <skill name>. You can fetch information with the following commands: get records, get records in AREA, get critical records. " +
+    instructions = "Welcome to <skill name>. You can fetch information with the following commands: get record, get number of records. " +
         "For more information, say help."
 
     // set response parameters
@@ -87,13 +112,55 @@ app.post('/', async (req, res) => {
         return true
     }
     
+    var query = ""
+    shouldEnd = false
+    message = "I'm not sure I understand. Please say a valid command or repeat yourself."
+    titleText = "Skill Fallback"
+    contentText = "Unknown command. Please say a valid command or repeat if valid."
+
     switch (req.body.request.intent.name) {
         case 'GetRecordIntent':
+            shouldEnd = false
             message = "Test get record"
-            titleText = "TEST"
+            titleText = "GetRecord Test"
             contentText = message
+            query = "select top 1 * from ##TempTable"
+            break;
+        case 'NumRecordsIntent':
+            var slotType = req.body.request.intent.slots.Type.value
+            shouldEnd = false
+            message = "Test NumRecordsLevelIntent"
+            titleText = "NumRecordsLevel Test"
+            contentText = message
+            if (slotType == null) {
+                query = "select top 1 * from ##TempTable"
+            }
+            // handle level types
+            else if (slotType.toLowerCase() == "warning" || slotType.toLowerCase() == "critical" || slotType.toLowerCase() == "15-critical" || slotType.toLowerCase() == "11-warning"){
+                if (slotType.toLowerCase() == "warning") {
+                    slotType = "11-warning"
+                }
+                else if (slotType.toLowerCase() == "critical") {
+                    slotType = "15-critical"
+                }
+                query = "select * from ##TempTable where level='" + slotType + "'"
+            }
+            else if (slotType.toLowerCase() == "process" || slotType.toLowerCase() == "instrument") {
+                query = "select * from ##TempTable where category='" + slotType + "'"
+            }
+            else if (slotType.toLowerCase() == "all") {
+                query = "select * from ##TempTable"
+            }
+            else {
+                sendResult(200, "Error. Invalid command received. Please relaunch the skill.", "Title Text", "Content Text", true)
+                return false;
+            }
+            //console.log(req.body.request.intent.slots.Level)
+            
             break;
         case 'AMAZON.HelpIntent':
+            query = ""
+            shouldEnd = false
             message = "To get general records, say 'Get records'. To get records from a specific area, say 'Get records in AREA', substituting in the specific area. " +
                 "To get records with critical status, say 'Get critical records'. To exit, say 'Stop'. To cancel operation without exiting, say 'Cancel'."
             titleText = "Skill Help Information"
@@ -101,6 +168,7 @@ app.post('/', async (req, res) => {
             sendResult(200, message, titleText, contentText, shouldEnd)
             return true
         case 'AMAZON.StopIntent':
+            query = ""
             shouldEnd = true;
             message = "Skill stopped. Shutting down."
             titleText = "Skill Operation Stopped"
@@ -108,18 +176,23 @@ app.post('/', async (req, res) => {
             sendResult(200, message, titleText, contentText, shouldEnd)
             return true
         case 'AMAZON.CancelIntent':
+            query = ""
+            shouldEnd = false;
             message = "Skill operation cancelled. Please say another command to continue or 'stop' to exit."
             titleText = "Skill Operation Cancelled"
             contentText = message
             sendResult(200, message, titleText, contentText, shouldEnd)
             return true
         case 'AMAZON.FallbackIntent':
+            query = ""
+            shouldEnd = false
             message = "I'm not sure I understand. Please say a valid command or repeat yourself."
             titleText = "Skill Fallback"
             contentText = "Unknown command. Please say a valid command or repeat if valid."
             sendResult(200, message, titleText, contentText, shouldEnd)
             return true
         default:
+            query = ""
             statusCode = 500;
             shouldEnd = true;
             res.status(500)
@@ -127,12 +200,42 @@ app.post('/', async (req, res) => {
     }
 
     try {
+        var msg
+        shouldEnd = false
         const pool = new sql.ConnectionPool(config)
         await pool.connect()
-        //await pool.connect()
-        const result = await pool.request().query('select TOP 2 * from ##TempTable')
-        console.log(result)
-        sendResult(200, result.recordset[0].description, 'Some result', 'Some content');
+        const result = await pool.request().query(query)
+        switch (req.body.request.intent.name) {
+            case 'GetRecordIntent':
+                msg = "The top alarm occurred on " + result.recordset[0].occurDate + " at " + result.recordset[0].occurTime + " with a description of " + result.recordset[0].description 
+                        + " and a level of " + result.recordset[0].level
+                sendResult(200, msg, 'Some result', 'Some content', shouldEnd);
+                break;
+            case 'NumRecordsIntent':
+                var slotType = req.body.request.intent.slots.Type.value
+                if (slotType == null) {
+                    //console.log("slotType is null")
+                    sendDialog("NumRecordsIntent", "Type")
+                }
+                else {
+                    //console.log("slotType is not null")
+                    if (slotType.toLowerCase() == "warning" || slotType.toLowerCase() == "11-warning" || slotType.toLowerCase() == "critical" || slotType.toLowerCase() == "15-critical") {
+                        msg = "There are " + result.recordset.length + " records with a level of " + slotType
+                    }
+                    else if (slotType.toLowerCase() == "process" || slotType.toLowerCase() == "instrument") {
+                        msg = "There are " + result.recordset.length + " records with a category of " + slotType
+                    }
+                    else if (slotType.toLowerCase() == "all") {
+                        msg = "There are currently " + result.recordset.length + " total active and unacknowledged records"
+                    }
+                    sendResult(200, msg, 'Some result', 'Some content', shouldEnd);
+                }
+                break;
+            default:
+                msg = "I'm not sure I understand. Please say a valid command or repeat yourself."
+                throw "Invalid query"
+        }
+        //console.log(result)
     } catch (err) {
         console.log(err)
         res.status(500)
