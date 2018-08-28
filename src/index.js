@@ -97,7 +97,7 @@ app.post('/', async (req, res) => {
     var statusCode, message, shouldEnd, titleText, contentText, instructions
     statusCode = 200;
     shouldEnd = false;
-    instructions = "Welcome to <skill name>. You can fetch information with the following commands: get record, get number of records. " +
+    instructions = "Welcome to <skill name>. You can fetch information with the following commands: get record, get number of records, and get most recent record. " +
         "For more information, say help."
 
     // set response parameters
@@ -120,18 +120,10 @@ app.post('/', async (req, res) => {
 
     switch (req.body.request.intent.name) {
         case 'GetRecordIntent':
-            shouldEnd = false
-            message = "Test get record"
-            titleText = "GetRecord Test"
-            contentText = message
             query = "select top 1 * from ##TempTable"
             break;
         case 'NumRecordsIntent':
             var slotType = req.body.request.intent.slots.Type.value
-            shouldEnd = false
-            message = "Test NumRecordsLevelIntent"
-            titleText = "NumRecordsLevel Test"
-            contentText = message
             if (slotType == null) {
                 query = "select top 1 * from ##TempTable"
             }
@@ -152,17 +144,19 @@ app.post('/', async (req, res) => {
                 query = "select * from ##TempTable"
             }
             else {
-                sendResult(200, "Error. Invalid command received. Please relaunch the skill.", "Title Text", "Content Text", true)
+                sendResult(200, "Error. Invalid type received. Please relaunch the skill.", "Title Text", "Content Text", true)
                 return false;
             }
             //console.log(req.body.request.intent.slots.Level)
             
             break;
+        case 'GetMostRecentRecordIntent':
+            query = "select top 1 * from ##TempTable Order By occurDate Desc, occurTime Desc"
+            break;
         case 'AMAZON.HelpIntent':
             query = ""
             shouldEnd = false
-            message = "To get general records, say 'Get records'. To get records from a specific area, say 'Get records in AREA', substituting in the specific area. " +
-                "To get records with critical status, say 'Get critical records'. To exit, say 'Stop'. To cancel operation without exiting, say 'Cancel'."
+            message = instructions
             titleText = "Skill Help Information"
             contentText = message
             sendResult(200, message, titleText, contentText, shouldEnd)
@@ -172,7 +166,7 @@ app.post('/', async (req, res) => {
             shouldEnd = true;
             message = "Skill stopped. Shutting down."
             titleText = "Skill Operation Stopped"
-            contentText = "Skill operation stopped. Please relaunch to continue."
+            contentText = "Skill operation stopped. Please relaunch if you want to continue."
             sendResult(200, message, titleText, contentText, shouldEnd)
             return true
         case 'AMAZON.CancelIntent':
@@ -209,7 +203,7 @@ app.post('/', async (req, res) => {
             case 'GetRecordIntent':
                 msg = "The top alarm occurred on " + result.recordset[0].occurDate + " at " + result.recordset[0].occurTime + " with a description of " + result.recordset[0].description 
                         + " and a level of " + result.recordset[0].level
-                sendResult(200, msg, 'Some result', 'Some content', shouldEnd);
+                sendResult(200, msg, 'Title Text', 'Content Text', shouldEnd);
                 break;
             case 'NumRecordsIntent':
                 var slotType = req.body.request.intent.slots.Type.value
@@ -228,9 +222,13 @@ app.post('/', async (req, res) => {
                     else if (slotType.toLowerCase() == "all") {
                         msg = "There are currently " + result.recordset.length + " total active and unacknowledged records"
                     }
-                    sendResult(200, msg, 'Some result', 'Some content', shouldEnd);
+                    sendResult(200, msg, 'Title Text', 'Content Text', shouldEnd);
                 }
                 break;
+            case 'GetMostRecentRecordIntent':
+                msg = "The most recent alarm was a " + result.recordset[0].Category + " alarm with level " + result.recordset[0].level + " and occurred on " + result.recordset[0].occurDate 
+                + " at " + result.recordset[0].occurTime + " with description " + result.recordset[0].description 
+                sendResult(200, msg, 'Title Text', 'Content Text', shouldEnd);        
             default:
                 msg = "I'm not sure I understand. Please say a valid command or repeat yourself."
                 throw "Invalid query"

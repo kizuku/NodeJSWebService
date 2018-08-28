@@ -120,7 +120,7 @@ app.post('/', function () {
                     case 14:
                         statusCode = 200;
                         shouldEnd = false;
-                        instructions = "Welcome to <skill name>. You can fetch information with the following commands: get record, get number of records. " + "For more information, say help.";
+                        instructions = "Welcome to <skill name>. You can fetch information with the following commands: get record, get number of records, and get most recent record. " + "For more information, say help.";
 
                         // set response parameters
                         res.setHeader('Content-Type', 'application/json');
@@ -153,37 +153,28 @@ app.post('/', function () {
                         contentText = "Unknown command. Please say a valid command or repeat if valid.";
 
                         _context.t1 = req.body.request.intent.name;
-                        _context.next = _context.t1 === 'GetRecordIntent' ? 36 : _context.t1 === 'NumRecordsIntent' ? 42 : _context.t1 === 'AMAZON.HelpIntent' ? 67 : _context.t1 === 'AMAZON.StopIntent' ? 74 : _context.t1 === 'AMAZON.CancelIntent' ? 81 : _context.t1 === 'AMAZON.FallbackIntent' ? 88 : 95;
+                        _context.next = _context.t1 === 'GetRecordIntent' ? 36 : _context.t1 === 'NumRecordsIntent' ? 38 : _context.t1 === 'GetMostRecentRecordIntent' ? 59 : _context.t1 === 'AMAZON.HelpIntent' ? 61 : _context.t1 === 'AMAZON.StopIntent' ? 68 : _context.t1 === 'AMAZON.CancelIntent' ? 75 : _context.t1 === 'AMAZON.FallbackIntent' ? 82 : 89;
                         break;
 
                     case 36:
-                        shouldEnd = false;
-                        message = "Test get record";
-                        titleText = "GetRecord Test";
-                        contentText = message;
                         query = "select top 1 * from ##TempTable";
-                        return _context.abrupt('break', 100);
+                        return _context.abrupt('break', 94);
 
-                    case 42:
+                    case 38:
                         slotType = req.body.request.intent.slots.Type.value;
 
-                        shouldEnd = false;
-                        message = "Test NumRecordsLevelIntent";
-                        titleText = "NumRecordsLevel Test";
-                        contentText = message;
-
                         if (!(slotType == null)) {
-                            _context.next = 51;
+                            _context.next = 43;
                             break;
                         }
 
                         query = "select top 1 * from ##TempTable";
-                        _context.next = 66;
+                        _context.next = 58;
                         break;
 
-                    case 51:
+                    case 43:
                         if (!(slotType.toLowerCase() == "warning" || slotType.toLowerCase() == "critical" || slotType.toLowerCase() == "15-critical" || slotType.toLowerCase() == "11-warning")) {
-                            _context.next = 56;
+                            _context.next = 48;
                             break;
                         }
 
@@ -193,55 +184,59 @@ app.post('/', function () {
                             slotType = "15-critical";
                         }
                         query = "select * from ##TempTable where level='" + slotType + "'";
-                        _context.next = 66;
+                        _context.next = 58;
                         break;
 
-                    case 56:
+                    case 48:
                         if (!(slotType.toLowerCase() == "process" || slotType.toLowerCase() == "instrument")) {
-                            _context.next = 60;
+                            _context.next = 52;
                             break;
                         }
 
                         query = "select * from ##TempTable where category='" + slotType + "'";
-                        _context.next = 66;
+                        _context.next = 58;
                         break;
 
-                    case 60:
+                    case 52:
                         if (!(slotType.toLowerCase() == "all")) {
-                            _context.next = 64;
+                            _context.next = 56;
                             break;
                         }
 
                         query = "select * from ##TempTable";
-                        _context.next = 66;
+                        _context.next = 58;
                         break;
 
-                    case 64:
-                        sendResult(200, "Error. Invalid command received. Please relaunch the skill.", "Title Text", "Content Text", true);
+                    case 56:
+                        sendResult(200, "Error. Invalid type received. Please relaunch the skill.", "Title Text", "Content Text", true);
                         return _context.abrupt('return', false);
 
-                    case 66:
-                        return _context.abrupt('break', 100);
+                    case 58:
+                        return _context.abrupt('break', 94);
 
-                    case 67:
+                    case 59:
+                        query = "select top 1 * from ##TempTable Order By occurDate Desc, occurTime Desc";
+                        return _context.abrupt('break', 94);
+
+                    case 61:
                         query = "";
                         shouldEnd = false;
-                        message = "To get general records, say 'Get records'. To get records from a specific area, say 'Get records in AREA', substituting in the specific area. " + "To get records with critical status, say 'Get critical records'. To exit, say 'Stop'. To cancel operation without exiting, say 'Cancel'.";
+                        message = instructions;
                         titleText = "Skill Help Information";
                         contentText = message;
                         sendResult(200, message, titleText, contentText, shouldEnd);
                         return _context.abrupt('return', true);
 
-                    case 74:
+                    case 68:
                         query = "";
                         shouldEnd = true;
                         message = "Skill stopped. Shutting down.";
                         titleText = "Skill Operation Stopped";
-                        contentText = "Skill operation stopped. Please relaunch to continue.";
+                        contentText = "Skill operation stopped. Please relaunch if you want to continue.";
                         sendResult(200, message, titleText, contentText, shouldEnd);
                         return _context.abrupt('return', true);
 
-                    case 81:
+                    case 75:
                         query = "";
                         shouldEnd = false;
                         message = "Skill operation cancelled. Please say another command to continue or 'stop' to exit.";
@@ -250,7 +245,7 @@ app.post('/', function () {
                         sendResult(200, message, titleText, contentText, shouldEnd);
                         return _context.abrupt('return', true);
 
-                    case 88:
+                    case 82:
                         query = "";
                         shouldEnd = false;
                         message = "I'm not sure I understand. Please say a valid command or repeat yourself.";
@@ -259,37 +254,37 @@ app.post('/', function () {
                         sendResult(200, message, titleText, contentText, shouldEnd);
                         return _context.abrupt('return', true);
 
-                    case 95:
+                    case 89:
                         query = "";
                         statusCode = 500;
                         shouldEnd = true;
                         res.status(500);
                         return _context.abrupt('return', false);
 
-                    case 100:
-                        _context.prev = 100;
+                    case 94:
+                        _context.prev = 94;
 
                         shouldEnd = false;
                         pool = new sql.ConnectionPool(config);
-                        _context.next = 105;
+                        _context.next = 99;
                         return pool.connect();
 
-                    case 105:
-                        _context.next = 107;
+                    case 99:
+                        _context.next = 101;
                         return pool.request().query(query);
 
-                    case 107:
+                    case 101:
                         result = _context.sent;
                         _context.t2 = req.body.request.intent.name;
-                        _context.next = _context.t2 === 'GetRecordIntent' ? 111 : _context.t2 === 'NumRecordsIntent' ? 114 : 117;
+                        _context.next = _context.t2 === 'GetRecordIntent' ? 105 : _context.t2 === 'NumRecordsIntent' ? 108 : _context.t2 === 'GetMostRecentRecordIntent' ? 111 : 113;
                         break;
 
-                    case 111:
+                    case 105:
                         msg = "The top alarm occurred on " + result.recordset[0].occurDate + " at " + result.recordset[0].occurTime + " with a description of " + result.recordset[0].description + " and a level of " + result.recordset[0].level;
-                        sendResult(200, msg, 'Some result', 'Some content', shouldEnd);
-                        return _context.abrupt('break', 119);
+                        sendResult(200, msg, 'Title Text', 'Content Text', shouldEnd);
+                        return _context.abrupt('break', 115);
 
-                    case 114:
+                    case 108:
                         slotType = req.body.request.intent.slots.Type.value;
 
                         if (slotType == null) {
@@ -304,35 +299,39 @@ app.post('/', function () {
                             } else if (slotType.toLowerCase() == "all") {
                                 msg = "There are currently " + result.recordset.length + " total active and unacknowledged records";
                             }
-                            sendResult(200, msg, 'Some result', 'Some content', shouldEnd);
+                            sendResult(200, msg, 'Title Text', 'Content Text', shouldEnd);
                         }
-                        return _context.abrupt('break', 119);
+                        return _context.abrupt('break', 115);
 
-                    case 117:
+                    case 111:
+                        msg = "The most recent alarm was a " + result.recordset[0].Category + " alarm with level " + result.recordset[0].level + " and occurred on " + result.recordset[0].occurDate + " at " + result.recordset[0].occurTime + " with description " + result.recordset[0].description;
+                        sendResult(200, msg, 'Title Text', 'Content Text', shouldEnd);
+
+                    case 113:
                         msg = "I'm not sure I understand. Please say a valid command or repeat yourself.";
                         throw "Invalid query";
 
-                    case 119:
-                        _context.next = 126;
+                    case 115:
+                        _context.next = 122;
                         break;
 
-                    case 121:
-                        _context.prev = 121;
-                        _context.t3 = _context['catch'](100);
+                    case 117:
+                        _context.prev = 117;
+                        _context.t3 = _context['catch'](94);
 
                         console.log(_context.t3);
                         res.status(500);
                         return _context.abrupt('return', false);
 
-                    case 126:
+                    case 122:
                         return _context.abrupt('return', true);
 
-                    case 127:
+                    case 123:
                     case 'end':
                         return _context.stop();
                 }
             }
-        }, _callee, undefined, [[3, 10], [100, 121]]);
+        }, _callee, undefined, [[3, 10], [94, 117]]);
     }));
 
     return function (_x, _x2) {
