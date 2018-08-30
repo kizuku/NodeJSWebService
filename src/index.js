@@ -25,6 +25,7 @@ app.use((req, res, next) => {
 })
 
 app.post('/', async (req, res) => {
+    // send json response to Alexa
     function sendResult(statusCode, message, titleText, contentText, shouldEnd) {
         res.status(statusCode).json({
             version: "1.0",
@@ -53,8 +54,8 @@ app.post('/', async (req, res) => {
         });
     }
 
-    function sendDialog(intentName, slotName) {
-        //console.log("Trying to send dialog")
+    // prompt user for slot value
+    function elicitSlot(intentName, slotName) {
         var textMsg = "Default value"
         if (intentName = "NumRecordsIntent") {
             textMsg = "What level or category are you interested in?"
@@ -137,6 +138,7 @@ app.post('/', async (req, res) => {
                 }
                 query = "select * from ##TempTable where level='" + slotType + "'"
             }
+            // handle category types
             else if (slotType.toLowerCase() == "process" || slotType.toLowerCase() == "instrument") {
                 query = "select * from ##TempTable where category='" + slotType + "'"
             }
@@ -147,8 +149,6 @@ app.post('/', async (req, res) => {
                 sendResult(200, "Error. Invalid type received. Please relaunch the skill.", "Title Text", "Content Text", true)
                 return false;
             }
-            //console.log(req.body.request.intent.slots.Level)
-            
             break;
         case 'GetMostRecentRecordIntent':
             query = "select top 1 * from ##TempTable Order By occurDate Desc, occurTime Desc"
@@ -201,18 +201,16 @@ app.post('/', async (req, res) => {
         const result = await pool.request().query(query)
         switch (req.body.request.intent.name) {
             case 'GetRecordIntent':
-                msg = "The top alarm occurred on " + result.recordset[0].occurDate + " at " + result.recordset[0].occurTime + " with a description of " + result.recordset[0].description 
+                msg = "The top alarm occurred on " + result.recordset[0].occurDate + " at " + result.recordset[0].occurTime + " and has a description of " + result.recordset[0].description 
                         + " and a level of " + result.recordset[0].level
                 sendResult(200, msg, 'Title Text', 'Content Text', shouldEnd);
                 break;
             case 'NumRecordsIntent':
                 var slotType = req.body.request.intent.slots.Type.value
                 if (slotType == null) {
-                    //console.log("slotType is null")
-                    sendDialog("NumRecordsIntent", "Type")
+                    elicitSlot("NumRecordsIntent", "Type")
                 }
                 else {
-                    //console.log("slotType is not null")
                     if (slotType.toLowerCase() == "warning" || slotType.toLowerCase() == "11-warning" || slotType.toLowerCase() == "critical" || slotType.toLowerCase() == "15-critical") {
                         msg = "There are " + result.recordset.length + " records with a level of " + slotType
                     }
@@ -233,7 +231,6 @@ app.post('/', async (req, res) => {
                 msg = "I'm not sure I understand. Please say a valid command or repeat yourself."
                 throw "Invalid query"
         }
-        //console.log(result)
     } catch (err) {
         console.log(err)
         res.status(500)
