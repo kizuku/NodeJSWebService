@@ -10,5 +10,4 @@ To compile, use "npm run babel" or "npx babel src --out-dir ./dist".
 
 Before publishing a skill, please create a dialog interaction list of commands and utterances for users.
 
-
-
+For more information on the project, please refer to the user manual word doc.
